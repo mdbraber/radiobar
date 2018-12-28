@@ -1,0 +1,26 @@
+{"channels": [
+	{
+		"title": "NPO Radio 1",
+		"url": "http://icecast.omroep.nl/radio1-bb-mp3"
+	},
+	{
+		"title": "NPO Radio 2",
+		"url": "http://icecast.omroep.nl/radio2-bb-mp3"
+	},
+	{
+		"title": "NPO 3FM",
+		"url": "http://icecast.omroep.nl/3fm-bb-mp3"
+	},
+	{
+		"title": "NPO Radio 4",
+		"url": "http://icecast.omroep.nl/radio4-bb-mp3"
+	},
+	{
+		"title": "NPO Radio 5",
+		"url": "http://icecast.omroep.nl/radio5-bb-mp3"
+	},
+	{
+		"title": "BNR Nieuwsradio",
+		"url": "http://icecast-bnr.cdp.triple-it.nl/bnr_mp3_128_03"
+	}
+]}
