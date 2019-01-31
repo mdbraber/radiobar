@@ -17,7 +17,7 @@ def connect():
     except socket_error as serr:
         if serr.errno != errno.ECONNREFUSED: 
             raise serr
-        subprocess.Popen(["open","/Applications/radiobar.app"])
+        subprocess.Popen(["open","/Applications/RadioBar.app"])
         time.sleep(5)
         return connect()
     
