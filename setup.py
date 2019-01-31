@@ -1,14 +1,23 @@
 from setuptools import setup
 
 APP = ['radiobar.py']
-DATA_FILES = ['channels.json','command.py']
+APP_NAME = "RadioBar"
+APP_VERSION = "0.1"
+DATA_FILES = ['channels.json','command.py','radio-icon-grey.png','radio-icon.png']
 OPTIONS = {
     'argv_emulation': True,
+    'iconfile': 'radiobar.icns',
     'plist': {
+        'CFBundleName': APP_NAME,
+        'CFBundleDisplayName': APP_NAME,
+        'CFBundleGetInfoString': "Listen to radio in your menubar",
+        'CFBundleIdentifier': "com.mdbraber.radiobar",
+        'CFBundleVersion': APP_VERSION,
+        'CFBundleShortVersionString': APP_VERSION,
         'LSUIElement': True,
     },
+    'includes': ['rumps'],
     'packages': ['rumps'],
-    'iconfile': 'radio-icon.png',
 }
 
 setup(

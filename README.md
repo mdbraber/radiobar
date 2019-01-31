@@ -23,6 +23,8 @@ To re-build the macOS app, run:
 
 ## Bugs
 
+- Sleep / wake only works when using a [patched version](https://github.com/mdbraber/rumps) of `rumps` until [PR #109](https://github.com/jaredks/rumps/pull/109) gets merged.
+
 - `parse_with_options` might not not be needing the second argument (`timeout`) in your version. You could remove it (not sure yet if it makes any difference). I'm still trying to implement a hook that watches for metadata changes for now playing. Tips welcome :-)
 
 - To use it with the current VLC (>= 3.x) we need to preload the `libvlccore.dylib` as a workaround. See 
