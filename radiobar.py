@@ -24,8 +24,7 @@ import vlc
 
 #print(vlc.__file__)
 
-rumps.debug_mode(True)
-print(rumps.__file__)
+rumps.debug_mode(False)
 
 if 'VLC_PLUGIN_PATH' not in os.environ:
     # print('VLC_PLUGIN_PATH not set. Setting now...')
@@ -45,6 +44,8 @@ class RadioBar(rumps.App):
         self.stations = []
         self.urls = {}
         self.get_stations()
+        # prevent multiple calls from sleep/wake
+        self.awake = True
 
         t_socket = threading.Thread(target=self.listen_socket)
         t_socket.start()
@@ -61,14 +62,13 @@ class RadioBar(rumps.App):
         new_menu.append(rumps.separator)
 
         for station in self.stations:
-            item = rumps.MenuItem(station['title'], callback=self.play)
+            item = rumps.MenuItem(station['title'], callback=self.toggle_playback)
             new_menu.append(item)
 
         new_menu.append(rumps.separator)
-        new_menu.append(rumps.MenuItem('Pause'))
         new_menu.append(rumps.MenuItem('Stop'))
         new_menu.append(rumps.separator)
-        new_menu.append(rumps.MenuItem('Quit RadioBar',callback=rumps.quit_application))
+        new_menu.append(rumps.MenuItem('Quit RadioBar',callback=self.quit))
 
         self.menu = new_menu
 
@@ -87,7 +87,7 @@ class RadioBar(rumps.App):
 
         self.build_menu()
 
-    def play_radio(self):
+    def start_radio(self):
         # craft station url
         station_url = self.urls[self.active_station]
         print(u'Playing URL %s' % station_url)
@@ -100,12 +100,9 @@ class RadioBar(rumps.App):
         if self.active_station is None:
             return
         self.menu[self.active_station].state = 0
-        self.menu[self.active_station].set_callback(self.play)
+        self.menu[self.active_station].set_callback(self.toggle_playback)
         self.active_station = None
         self.title = None
-        self.menu['Pause'].state = 0
-        self.menu['Pause'].title = 'Pause'
-        self.menu['Pause'].set_callback(None)
         self.menu['Stop'].state = 0
         self.menu['Stop'].title = 'Stop'
         self.menu['Stop'].set_callback(None)
@@ -119,13 +116,8 @@ class RadioBar(rumps.App):
         self.active_station = sender.title
         self.title = ' ' + sender.title
         sender.state = 1
-        sender.set_callback(None)
         print("Playing radio: " + sender.title)
         self.notify("Playing radio: " + sender.title)
-
-        # reset Pause
-        self.menu['Pause'].set_callback(self.toggle_playback)
-        self.menu['Pause'].title = 'Pause'
 
         # reset Stop
         self.menu['Stop'].set_callback(self.stop_playback)
@@ -133,13 +125,12 @@ class RadioBar(rumps.App):
 
         self.icon = 'radio-icon.png'
 
-        self.play_radio()
+        self.start_radio()
 
         time.sleep(.3)
         self.set_nowplaying(self.get_nowplaying())
 
     def stop_playback(self, sender):
-        #sender.state = 1
         self.reset_menu_state()
         self.player.stop()
         self.menu['Now Playing'].title = 'Nothing playing...'
@@ -147,18 +138,19 @@ class RadioBar(rumps.App):
         self.notify("Stopped")
 
     def toggle_playback(self, sender):
-        if self.active_station is not None:
+        # Stopped -> Playing
+        if self.active_station is None or self.menu[self.active_station] is not sender:
+            self.play(sender)
+        else: 
             active_menu = self.menu[self.active_station]
+            # Playing -> Paused
             if active_menu.state == 1:
                 active_menu.state = -1
-                sender.title = 'Paused - click to resume'
-                sender.state = 1
                 self.icon = 'radio-icon-grey.png'
                 self.player.pause()
-            else:
+            # Paused -> Playing
+            elif active_menu.state == -1:
                 active_menu.state = 1
-                sender.title = 'Pause'
-                sender.state = 0
                 self.icon = 'radio-icon.png'
                 self.player.play()
 
@@ -216,22 +208,26 @@ class RadioBar(rumps.App):
             elif msg == "off":
                 self.stop_playback(self.menu["Stop"])
                 c.send(b'Off')
+            elif msg == "on" or msg == "resume":
+                if self.active_station:
+                    self.toggle_playback(self.menu[self.active_station])
+                    c.send(b'On')
+            elif msg == "pause":
+                if self.active_station:
+                    self.toggle_playback(self.menu[self.active_station])
+                    c.send(b'Pause')
             elif msg == "info":
                 nowplaying = self.get_nowplaying()
                 c.send(nowplaying.encode('utf-8'))
             elif msg == "toggle":
                 self.toggle_playback(self.menu['Pause'])
-                c.send('Toggle ' + self.menu[self.active_station])
-            elif msg == "icon":
-                self.change_icon()
-                c.send(b'Changed icon')
+                c.send(b'Toggle ' + self.active_station.encode('utf-8'))
+            elif msg == "sleep":
+                self.sleep()
+                c.send(b'Sleep')
             else:
                 c.send(b'Unknown input')
         c.close()
-
-    def change_icon(self):
-        self.title = 'Test'
-        self.icon = 'radio-icon-red.png'
 
     def notify(self, msg):
         print("Notification: " + msg)
@@ -241,15 +237,18 @@ class RadioBar(rumps.App):
             rumps.notification('RadioBar', msg, None)
         pass
 
-    def quit(self):
-        self.quit_application()
+    def quit(self, sender):
         self.socket.close()
+        rumps.quit_application(sender)
 
     def sleep(self):
         print("Going to sleep!")
-        self.stop_playback(None)
-
+        if self.awake:
+            self.toggle_playback(None)
+        self.awake = False
+    
     def wake(self):
+        self.awake = True
         print("Waking up!")
 
 if __name__ == "__main__":
