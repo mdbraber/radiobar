@@ -48,7 +48,7 @@ class RadioBarRemoteThread(threading.Thread):
             c, addr = self.socket.accept()
             data = c.recv(1024)
             msg = data.decode("utf-8")
-            print("Received: " + msg)
+            print("Remote received: " + msg)
             if msg.isnumeric() and 0 <= int(msg)-1 < len(radiobar.stations):
                 radiobar.play(radiobar.menu[radiobar.stations[int(msg)-1]['title']])
                 c.send(b'Listening to ' + radiobar.stations[int(msg)-1]['title'].encode('utf-8'))  
@@ -244,12 +244,12 @@ class RadioBar(rumps.App):
             self.set_nowplaying(nowplaying_new)
 
     def notify(self, msg):
-        print("Notification: " + msg)
-        if self.active_station:
-            rumps.notification('RadioBar', self.active_station, msg)
-        else:
-            rumps.notification('RadioBar', msg, None)
-        pass
+        if msg != self.active_station
+            print("Notification: " + msg)
+            if self.active_station:
+                rumps.notification('RadioBar', self.active_station, msg)
+            else:
+                rumps.notification('RadioBar', msg, None)
 
     def quit(self, sender):
         for t in self.threads:
