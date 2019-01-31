@@ -66,9 +66,8 @@ class RadioBarRemoteThread(threading.Thread):
                 if radiobar.active_station:
                     radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
                     c.send(b'Pause')
-            elif msg == "info":
-                nowplaying = radiobar.get_nowplaying()
-                c.send(nowplaying.encode('utf-8'))
+            elif msg == "nowplaying":
+                c.send(bytes(radiobar.nowplaying.encode('utf-8')))
             elif msg == "toggle":
                 radiobar.toggle_playback()
                 c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
@@ -167,19 +166,20 @@ class RadioBar(rumps.App):
         self.active_station = sender.title
         self.title = ' ' + sender.title
         sender.state = 1
-        print("Playing radio: " + sender.title)
-        self.notify("Playing radio: " + sender.title)
-
         # reset Stop
         self.menu['Stop'].set_callback(self.stop_playback)
         self.menu['Stop'].title = 'Stop'
 
         self.icon = 'radio-icon.png'
 
+        print("Switching to radio: " + self.active_station)
         self.start_radio()
 
         time.sleep(.3)
         self.set_nowplaying(self.get_nowplaying())
+
+        print("Playing: " + self.nowplaying)
+        self.notify(self.nowplaying)
 
     def stop_playback(self, sender):
         self.reset_menu_state()
@@ -210,7 +210,6 @@ class RadioBar(rumps.App):
                 self.player.play()
 
     def get_nowplaying(self):
-
         if self.active_station is not None:
             media = self.player.get_media()
             try:
@@ -222,7 +221,10 @@ class RadioBar(rumps.App):
                 if artist and artist != "" and title and title != "":
                     return artist + " - " + title
                 elif nowplaying and nowplaying != "":
-                    return nowplaying
+                    if nowplaying.startswith(self.active_station):
+                        return nowplaying.replace(self.active_station + " - ", "")
+                    else:
+                        return nowplaying
                 elif self.active_station != "":
                     return self.active_station
                 else:
@@ -233,8 +235,9 @@ class RadioBar(rumps.App):
     def set_nowplaying(self, nowplaying):
         self.nowplaying = nowplaying
         self.menu['Now Playing'].title = nowplaying
-        #print("Now playing: " + nowplaying)
-        self.notify(nowplaying)
+        self.nowplaying = nowplaying
+        if not nowplaying.startswith(self.active_station):
+            self.notify(nowplaying)
 
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
@@ -243,12 +246,11 @@ class RadioBar(rumps.App):
             self.set_nowplaying(nowplaying_new)
 
     def notify(self, msg):
-        if msg != self.active_station:
-            print("Notification: " + msg)
-            if self.active_station:
-                rumps.notification('RadioBar', self.active_station, msg)
-            else:
-                rumps.notification('RadioBar', msg, None)
+        print("Notification: " + msg)
+        if self.active_station:
+            rumps.notification('RadioBar', self.active_station, msg)
+        else:
+            rumps.notification('RadioBar', msg, None)
 
     def quit(self, sender):
         for t in self.threads:
