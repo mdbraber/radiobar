@@ -25,7 +25,7 @@ try:
     s = connect()
     s.sendall(bytes(sys.argv[1],'utf-8'))
     data = s.recv(1024)
-    #sys.stdout("Test")
+    print(data.decode('utf-8'))
 except socket_error as serr:
     print(serr)
     sys.exit(1)
