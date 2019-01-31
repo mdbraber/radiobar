@@ -16,7 +16,6 @@ OPTIONS = {
         'CFBundleShortVersionString': APP_VERSION,
         'LSUIElement': True,
     },
-    'includes': ['rumps'],
     'packages': ['rumps'],
 }
 
