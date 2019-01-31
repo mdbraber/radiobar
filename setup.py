@@ -3,7 +3,7 @@ from setuptools import setup
 APP = ['radiobar.py']
 APP_NAME = "RadioBar"
 APP_VERSION = "0.1"
-DATA_FILES = ['channels.json','command.py','radio-icon-grey.png','radio-icon.png']
+DATA_FILES = ['channels.json','remote.py','radio-icon-grey.png','radio-icon.png']
 OPTIONS = {
     'argv_emulation': True,
     'iconfile': 'radiobar.icns',
