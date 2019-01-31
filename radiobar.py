@@ -30,6 +30,60 @@ if 'VLC_PLUGIN_PATH' not in os.environ:
     # print('VLC_PLUGIN_PATH not set. Setting now...')
     os.environ['VLC_PLUGIN_PATH'] = '$VLC_PLUGIN_PATH:/Applications/VLC.app/Contents/MacOS/plugins'
 
+class RadioBarRemoteThread(threading.Thread):
+    def __init__(self, radiobar, host, port):
+        super(RadioBarRemoteThread, self).__init__()
+        self.alive = threading.Event()
+        self.alive.set()
+
+        self.radiobar = radiobar
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((host, port))
+        self.socket.listen()
+
+    def run(self):
+        radiobar = self.radiobar
+        while self.alive.isSet():
+            c, addr = self.socket.accept()
+            data = c.recv(1024)
+            msg = data.decode("utf-8")
+            print("Received: " + msg)
+            if msg.isnumeric() and 0 <= int(msg)-1 < len(radiobar.stations):
+                radiobar.play(radiobar.menu[radiobar.stations[int(msg)-1]['title']])
+                c.send(b'Listening to ' + radiobar.stations[int(msg)-1]['title'].encode('utf-8'))  
+            elif msg == "off":
+                radiobar.stop_playback(radiobar.menu["Stop"])
+                c.send(b'Off')
+            elif msg == "on" or msg == "resume":
+                if radiobar.active_station:
+                    radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+                    c.send(b'On')
+            elif msg == "pause":
+                if radiobar.active_station:
+                    radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+                    c.send(b'Pause')
+            elif msg == "info":
+                nowplaying = radiobar.get_nowplaying()
+                c.send(nowplaying.encode('utf-8'))
+            elif msg == "toggle":
+                radiobar.toggle_playback()
+                c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
+            elif msg == "sleep":
+                radiobar.sleep()
+                c.send(b'Sleep')
+            else:
+                c.send(b'Unknown input')
+        c.close()
+
+    def stop(self):
+        self.alive.clear()
+        self.socket.close()
+
+    def join(self, timeout=None):
+        self.alive.set()
+        threading.Thread.join(self, timeout)
+
 class RadioBar(rumps.App):
 
     def __init__(self):
@@ -47,8 +101,10 @@ class RadioBar(rumps.App):
         # prevent multiple calls from sleep/wake
         self.awake = True
 
-        t_socket = threading.Thread(target=self.listen_socket)
-        t_socket.start()
+        self.threads = []
+        remote_thread = RadioBarRemoteThread(self, '127.0.0.1', 65432)
+        self.threads.append(remote_thread)
+        remote_thread.start()
 
     def build_menu(self):
         self.menu.clear()
@@ -187,48 +243,6 @@ class RadioBar(rumps.App):
         if self.active_station and nowplaying_new and (self.nowplaying is None or nowplaying_new != self.nowplaying):
             self.set_nowplaying(nowplaying_new)
 
-    def listen_socket(self):
-        HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-        PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind((HOST, PORT))
-        s.listen()
-
-        self.socket = s
-
-        while True:
-            c, addr = s.accept()
-            data = c.recv(1024)
-            msg = data.decode("utf-8")
-            print("Received: " + msg)
-            if msg.isnumeric() and 0 <= int(msg)-1 < len(self.stations):
-                self.play(self.menu[self.stations[int(msg)-1]['title']])
-                c.send(b'Listening to ' + self.stations[int(msg)-1]['title'].encode('utf-8'))  
-            elif msg == "off":
-                self.stop_playback(self.menu["Stop"])
-                c.send(b'Off')
-            elif msg == "on" or msg == "resume":
-                if self.active_station:
-                    self.toggle_playback(self.menu[self.active_station])
-                    c.send(b'On')
-            elif msg == "pause":
-                if self.active_station:
-                    self.toggle_playback(self.menu[self.active_station])
-                    c.send(b'Pause')
-            elif msg == "info":
-                nowplaying = self.get_nowplaying()
-                c.send(nowplaying.encode('utf-8'))
-            elif msg == "toggle":
-                self.toggle_playback(self.menu['Pause'])
-                c.send(b'Toggle ' + self.active_station.encode('utf-8'))
-            elif msg == "sleep":
-                self.sleep()
-                c.send(b'Sleep')
-            else:
-                c.send(b'Unknown input')
-        c.close()
-
     def notify(self, msg):
         print("Notification: " + msg)
         if self.active_station:
@@ -238,7 +252,9 @@ class RadioBar(rumps.App):
         pass
 
     def quit(self, sender):
-        self.socket.close()
+        for t in self.threads:
+            t.stop()
+            t.join()
         rumps.quit_application(sender)
 
     def sleep(self):
