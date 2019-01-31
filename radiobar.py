@@ -68,6 +68,8 @@ class RadioBarRemoteThread(threading.Thread):
                     c.send(b'Pause')
             elif msg == "nowplaying":
                 c.send(bytes(radiobar.nowplaying.encode('utf-8')))
+            elif msg == "show":
+                radiobar.notify(radiobar.nowplaying)
             elif msg == "toggle":
                 radiobar.toggle_playback()
                 c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
