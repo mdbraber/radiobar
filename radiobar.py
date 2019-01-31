@@ -33,23 +33,26 @@ if 'VLC_PLUGIN_PATH' not in os.environ:
 class RadioBarRemoteThread(threading.Thread):
     def __init__(self, radiobar, host, port):
         super(RadioBarRemoteThread, self).__init__()
-        self.alive = threading.Event()
-        self.alive.set()
+        self.stop_event = threading.Event()
 
         self.radiobar = radiobar
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((host, port))
+        self.host = host
+        self.port = port
+        self.socket.bind((self.host, self.port))
         self.socket.listen()
 
     def run(self):
         radiobar = self.radiobar
-        while self.alive.isSet():
+        while not self.stop_event.is_set():
             c, addr = self.socket.accept()
             data = c.recv(1024)
             msg = data.decode("utf-8")
             print("Remote received: " + msg)
-            if msg.isnumeric() and 0 <= int(msg)-1 < len(radiobar.stations):
+            if msg == "":
+                radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+            elif msg.isnumeric() and 0 <= int(msg)-1 < len(radiobar.stations):
                 radiobar.play(radiobar.menu[radiobar.stations[int(msg)-1]['title']])
                 c.send(b'Listening to ' + radiobar.stations[int(msg)-1]['title'].encode('utf-8'))  
             elif msg == "off":
@@ -69,20 +72,12 @@ class RadioBarRemoteThread(threading.Thread):
             elif msg == "toggle":
                 radiobar.toggle_playback()
                 c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
-            elif msg == "sleep":
-                radiobar.sleep()
-                c.send(b'Sleep')
             else:
                 c.send(b'Unknown input')
         c.close()
 
     def stop(self):
-        self.alive.clear()
-        self.socket.close()
-
-    def join(self, timeout=None):
-        self.alive.set()
-        threading.Thread.join(self, timeout)
+        self.stop_event.set()
 
 class RadioBar(rumps.App):
 
@@ -195,7 +190,11 @@ class RadioBar(rumps.App):
 
     def toggle_playback(self, sender):
         # Stopped -> Playing
-        if self.active_station is None or self.menu[self.active_station] is not sender:
+        if sender == None:
+            pass
+        elif self.active_station is None and sender is not None:
+            self.play(sender)
+        elif self.menu[self.active_station] is not sender:
             self.play(sender)
         else: 
             active_menu = self.menu[self.active_station]
@@ -203,7 +202,7 @@ class RadioBar(rumps.App):
             if active_menu.state == 1:
                 active_menu.state = -1
                 self.icon = 'radio-icon-grey.png'
-                self.player.pause()
+                self.player.stop()
             # Paused -> Playing
             elif active_menu.state == -1:
                 active_menu.state = 1
@@ -244,7 +243,7 @@ class RadioBar(rumps.App):
             self.set_nowplaying(nowplaying_new)
 
     def notify(self, msg):
-        if msg != self.active_station
+        if msg != self.active_station:
             print("Notification: " + msg)
             if self.active_station:
                 rumps.notification('RadioBar', self.active_station, msg)
@@ -254,18 +253,17 @@ class RadioBar(rumps.App):
     def quit(self, sender):
         for t in self.threads:
             t.stop()
-            t.join()
         rumps.quit_application(sender)
 
     def sleep(self):
         print("Going to sleep!")
-        if self.awake:
-            self.toggle_playback(None)
+        if self.awake and self.active_station:
+            self.toggle_playback(self.menu[self.active_station])
         self.awake = False
     
     def wake(self):
-        self.awake = True
         print("Waking up!")
+        self.awake = True
 
 if __name__ == "__main__":
     RadioBar().run()
