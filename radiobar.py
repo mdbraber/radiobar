@@ -70,6 +70,7 @@ class RadioBarRemoteThread(threading.Thread):
                 c.send(bytes(radiobar.nowplaying.encode('utf-8')))
             elif msg == "show":
                 radiobar.notify(radiobar.nowplaying)
+                c.send(bytes(radiobar.nowplaying.encode('utf-8')))
             elif msg == "toggle":
                 radiobar.toggle_playback()
                 c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
@@ -223,10 +224,7 @@ class RadioBar(rumps.App):
                 if artist and artist != "" and title and title != "":
                     return artist + " - " + title
                 elif nowplaying and nowplaying != "":
-                    if nowplaying.startswith(self.active_station):
-                        return nowplaying.replace(self.active_station + " - ", "")
-                    else:
-                        return nowplaying
+                    return nowplaying
                 elif self.active_station != "":
                     return self.active_station
                 else:
@@ -234,19 +232,26 @@ class RadioBar(rumps.App):
             except AttributeError as e:
                 return None
 
-    def set_nowplaying(self, nowplaying):
-        self.nowplaying = nowplaying
-        self.menu['Now Playing'].title = nowplaying
-        self.nowplaying = nowplaying
-    
+    def set_nowplaying(self, new):
+        old = self.nowplaying
+
+        # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
+        if self.active_station and new and (old is None or old != new):
+            if new.startswith(self.active_station):
+                np = new.replace(self.active_station + " - ","") 
+                # Don't send a notification if we're switch back to normal programming
+            else:
+                np = new
+                # Do send a notification if e.g. there's a song now playing (doesn't start w/ station name)
+                self.notify(np)
+
+            self.nowplaying = np
+            self.menu['Now Playing'].title = np
+
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
-        nowplaying_new = self.get_nowplaying()
-        if self.active_station and nowplaying_new and (self.nowplaying is None or nowplaying_new != self.nowplaying):
-            self.set_nowplaying(nowplaying_new)
-            if not nowplaying_new.startswith(self.active_station):
-                self.notify(self.nowplaying)
-
+        self.set_nowplaying(self.get_nowplaying())
+   
     def notify(self, msg):
         print("Notification: " + msg)
         if self.active_station:
