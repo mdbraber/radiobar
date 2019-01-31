@@ -236,14 +236,14 @@ class RadioBar(rumps.App):
         self.nowplaying = nowplaying
         self.menu['Now Playing'].title = nowplaying
         self.nowplaying = nowplaying
-        if not nowplaying.startswith(self.active_station):
-            self.notify(nowplaying)
-
+    
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
         nowplaying_new = self.get_nowplaying()
         if self.active_station and nowplaying_new and (self.nowplaying is None or nowplaying_new != self.nowplaying):
             self.set_nowplaying(nowplaying_new)
+            if not nowplaying_new.startswith(self.active_station):
+                self.notify(self.nowplaying)
 
     def notify(self, msg):
         print("Notification: " + msg)
