@@ -2,26 +2,55 @@
 
 Basic macOS menubar app to play user-defined radio stations with help from [rumps](https://github.com/jaredks/rumps) and VLC. Forked from [RadioBar](https://github.com/wass3r/RadioBar) by [David May](https://github.com/wass3r)
 
-## Installation
+![screenshot](screenshot.png)
 
-- Be sure to adapt `channels.json` to your needs. 
-- "Now playing" integration is experimental and might not work as expected
+# Installation
 
-Use the include `command.py` to send commands to a running RadioBar instance to change channels and switch on/off.
+- Adapt `channels.json` to your needs
+- Check the source code to e.g. change notification settings (manual for now)
+- Build the `.app` using `python setup.py py2app` (see [Development](#Development))
+- Install the `.app` from the `dist/` directory
+
+Currently no packaged `.app` is distributed because I've not yet been able to include an easy way to change / update channels. Suggestions for an easy / simple mechanism are welcome!
+
+## Usage
+
+- Click a channel to start streaming (a ✔ is shown in front)
+- Click the current channel to pause streaming (a `-` is shown in front)
+- Click "Stop" to stop streaming a channel
+- "Now Playing" information shows on top of the menu
+- Notifications are show when the "Now playing" information changes (unless it's the channel / show name)
+
+Pause / resume stops streaming (but shows the channel as paused). It's not buffering radio (which didn't seem logical for live radio). You can also use the `remote.py` to automate switching channels, see below.
+
+## Remote
+
+Use the include `remote.py` to send commands to a running RadioBar instance to change channels and switch on/off. You can also use the command as part of an Alfred workflow. `remote.py` understands the following commands:
+
+- `n` - switch to the __n__th channel
+- `off` - stop playing raudio
+- `pause` - pause playing radio (don't switch station, but stop streaming)
+- `resume` | `on` - resume playing radio (start streaming again)
+- `nowplaying` - output the now playing info 
+- `show` - output the now playing info and trigger a notification
 
 ## Development
 
 Make sure you have VLC installed, ie. `brew cask install vlc`.
 
 Tested in Python 2.7.x and 3.x. To run, try:
+
 1. `pip install -r requirements.txt`
 2. `python radiobar.py`
 
 To re-build the macOS app, run:
+
 1. `rm -rf ./dist/ ./build/`
 2. `python setup.py py2app`
 
 ## Bugs
+
+- "Now playing" integration is experimental and might not work as expected
 
 - Sleep / wake only works when using a [patched version](https://github.com/mdbraber/rumps) of `rumps` until [PR #109](https://github.com/jaredks/rumps/pull/109) gets merged.
 
