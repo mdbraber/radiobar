@@ -6,7 +6,7 @@ macOS menubar app to play user-defined radio stations with help from [rumps](htt
 
 ## Features
 
-- ▶️  **Show now playing information (in menubar and/or notifications)**
+- ▶️  **Show__Now Playing__ information (in menubar and/or notifications)**
 - ⚡ **Lightweight and fast!**
 - 🖥️ **Menubar only, no Dock icon**
 - 🎵 **Add any streaming URL that VLC can play**
