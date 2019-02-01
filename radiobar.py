@@ -87,7 +87,7 @@ class RadioBar(rumps.App):
         super(RadioBar, self).__init__('RadioBar',icon='radio-icon-grey.png', template=None, quit_button=None)
 
         self.show_notifications = True
-        self.show_station = True
+        self.show_nowplaying_menubar = True
         
         self.active_station = None
         self.nowplaying = None
@@ -237,13 +237,19 @@ class RadioBar(rumps.App):
 
         # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
         if self.active_station and new and (old is None or old != new):
+            # Update menubar with full nowplaying information as sent by the station
             if new.startswith(self.active_station):
-                np = new.replace(self.active_station + " - ","") 
+                if self.show_nowplaying_menubar:
+                    self.title = ' ' + new
                 # Don't send a notification if we're switch back to normal programming
+                np = new.replace(self.active_station + " - ","") 
             else:
+                if self.show_nowplaying_menubar:
+                    self.title = self.active_station + ' - ' + new
                 np = new
                 # Do send a notification if e.g. there's a song now playing (doesn't start w/ station name)
                 self.notify(np)
+                self.title = ' ' + np
 
             self.nowplaying = np
             self.menu['Now Playing'].title = np
