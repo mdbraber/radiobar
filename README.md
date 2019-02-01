@@ -1,10 +1,18 @@
 ## RadioBar
 
-Basic macOS menubar app to play user-defined radio stations with help from [rumps](https://github.com/jaredks/rumps) and VLC. Forked from [RadioBar](https://github.com/wass3r/RadioBar) by [David May](https://github.com/wass3r)
+macOS menubar app to play user-defined radio stations with help from [rumps](https://github.com/jaredks/rumps) and VLC. It includes a `remote` to switch channels, on/off, pause/resume etc. Forked from [RadioBar](https://github.com/wass3r/RadioBar) by [David May](https://github.com/wass3r)
 
 ![screenshot](screenshot.png)
 
-# Installation
+## Features
+
+- ⚡ **Lightweight and fast!**
+- 🖥️ **Menubar only, no Dock icon**
+- 🎵 **Add any streaming URL that VLC can play**
+- 💤 **Stop playing when macOS goes to sleep**
+- 🕹️ **Remote control via scripts and launchers such as Alfred**
+
+## Installation
 
 Make sure you have `vlc` installed, e.g. using `brew cask install vlc`. Also, if you don't have Python installed, install it with `brew install python3`.
 
@@ -65,7 +73,7 @@ https://github.com/oaubert/python-vlc/issues/37 for more info.
 
 ## Credits
 
-This is a fork of RadioBar built by [wass3r](https://github.com/wass3r/RadioBar/) (David May). All credits for the intial concept goes to him!
+This is a fork of RadioBar built by [wass3r](https://github.com/wass3r/RadioBar/) (David May). All credits for the intial concept go to him!
 
 ## License
 MIT
