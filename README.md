@@ -4,7 +4,15 @@ macOS menubar app to play user-defined radio stations with help from [rumps](htt
 
 ![screenshot](screenshot.png)
 
-# Installation
+## Features
+
+- Lightweight and fast!
+- Menubar only, no Dock icon
+- Add any streaming URL that VLC can play
+- Stop playing when macOS goes to sleep
+- Remote control via scripts and launchers such as Alfred
+
+## Installation
 
 Make sure you have `vlc` installed, e.g. using `brew cask install vlc`. Also, if you don't have Python installed, install it with `brew install python3`.
 
