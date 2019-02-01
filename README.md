@@ -65,7 +65,7 @@ https://github.com/oaubert/python-vlc/issues/37 for more info.
 
 ## Credits
 
-This is a fork of RadioBar built by [wass3r](https://github.com/wass3r/RadioBar/) (David May). All credits for the intial concept goes to him!
+This is a fork of RadioBar built by [wass3r](https://github.com/wass3r/RadioBar/) (David May). All credits for the intial concept go to him!
 
 ## License
 MIT
