@@ -29,7 +29,7 @@ When macOS sleeps streaming will be stopped and you have to manually resume it (
 
 Use the include `remote.py` to send commands to a running RadioBar instance to change channels and switch on/off. You can also use the command as part of an Alfred workflow. `remote.py` understands the following commands:
 
-- `n` - switch to the __n__th channel
+- `n` - switch to the _n_th channel
 - `off` - stop playing raudio
 - `pause` - pause playing radio (don't switch station, but stop streaming)
 - `resume` | `on` - resume playing radio (start streaming again)
