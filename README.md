@@ -6,6 +6,8 @@ Basic macOS menubar app to play user-defined radio stations with help from [rump
 
 # Installation
 
+Make sure you have `vlc` installed, e.g. using `brew cask install vlc`. Also, if you don't have Python installed, install it with `brew install python3`.
+
 - Adapt `channels.json` to your needs
 - Check the source code to e.g. change notification settings (manual for now)
 - Build the `.app` using `python setup.py py2app` (see [Development](#Development))
