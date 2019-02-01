@@ -168,18 +168,16 @@ class RadioBar(rumps.App):
 
         self.active_station = sender.title
         self.title = ' ' + sender.title
+        self.icon = 'radio-icon.png'
         sender.state = 1
-        # reset Stop
         self.menu['Stop'].set_callback(self.stop_playback)
         self.menu['Stop'].title = 'Stop'
 
-        self.icon = 'radio-icon.png'
-
-        print("Switching to radio: " + self.active_station)
+        print("Switching to station: " + self.active_station)
         self.start_radio()
 
         time.sleep(.3)
-        self.set_nowplaying(self.get_nowplaying())
+        self.update_nowplaying()
 
         print("Playing: " + self.nowplaying)
         self.notify(self.nowplaying)
@@ -232,31 +230,29 @@ class RadioBar(rumps.App):
             except AttributeError as e:
                 return None
 
-    def set_nowplaying(self, new):
-        old = self.nowplaying
-
-        # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
-        if self.active_station and new and (old is None or old != new):
-            # Update menubar with full nowplaying information as sent by the station
-            if new.startswith(self.active_station):
+    def update_nowplaying(self):
+        if self.active_station is not None:
+            old_info = self.nowplaying
+            new = self.get_nowplaying()
+            new_info = new.replace(self.active_station + " - ","")
+            if new_info.isupper():
+                # Fix ALL UPPERCASE strings (and some annyoing regressions)
+                new_info = new_info.title().replace('3Fm','3FM').replace('Npo','NPO')
+           
+            if (old_info is None or old_info != new_info):
+                self.nowplaying = new_info
+                self.menu['Now Playing'].title = new_info
                 if self.show_nowplaying_menubar:
-                    self.title = ' ' + new
-                # Don't send a notification if we're switch back to normal programming
-                np = new.replace(self.active_station + " - ","") 
-            else:
-                if self.show_nowplaying_menubar:
-                    self.title = self.active_station + ' - ' + new
-                np = new
-                # Do send a notification if e.g. there's a song now playing (doesn't start w/ station name)
-                self.notify(np)
-                self.title = ' ' + np
-
-            self.nowplaying = np
-            self.menu['Now Playing'].title = np
+                    self.title = ' ' + self.active_station + ' - ' + new_info
+                # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
+                # and I don't want notifications all the time the show name comes back on as Now Playing new_info...
+                # So we only show notifications when the new info doesn't start with the station name.
+                if not new.startswith(self.active_station):
+                    self.notify(new_info)
 
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
-        self.set_nowplaying(self.get_nowplaying())
+        self.update_nowplaying()
    
     def notify(self, msg):
         print("Notification: " + msg)
