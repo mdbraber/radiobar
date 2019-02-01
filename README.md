@@ -1,6 +1,6 @@
 ## RadioBar
 
-Basic macOS menubar app to play user-defined radio stations with help from [rumps](https://github.com/jaredks/rumps) and VLC. Forked from [RadioBar](https://github.com/wass3r/RadioBar) by [David May](https://github.com/wass3r)
+Basic macOS menubar app to play user-defined radio stations with help from [rumps](https://github.com/jaredks/rumps) and VLC. It includes a `remote` to switch channels, on/off, pause/resume etc. Forked from [RadioBar](https://github.com/wass3r/RadioBar) by [David May](https://github.com/wass3r)
 
 ![screenshot](screenshot.png)
 
