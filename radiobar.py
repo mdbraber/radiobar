@@ -10,6 +10,12 @@ import socket
 import threading
 import json
 import time
+import re
+
+from AppKit import NSAttributedString
+from PyObjCTools.Conversion import propertyListFromPythonCollection
+from Cocoa import (NSFont, NSFontAttributeName,
+    NSColor, NSForegroundColorAttributeName)
 
 # preload libvlccore.dylib
 # https://github.com/oaubert/python-vlc/issues/37
@@ -87,8 +93,9 @@ class RadioBar(rumps.App):
         super(RadioBar, self).__init__('RadioBar',icon='radio-icon-grey.png', template=None, quit_button=None)
 
         self.show_notifications = True
+        self.show_notification_station_change = False
         self.show_nowplaying_menubar = True
-        
+
         self.active_station = None
         self.nowplaying = None
         self.player = vlc.MediaPlayer()
@@ -180,7 +187,8 @@ class RadioBar(rumps.App):
         self.update_nowplaying()
 
         print("Playing: " + self.nowplaying)
-        self.notify(self.nowplaying)
+        if self.show_notification_station_change:
+            self.notify(self.nowplaying)
 
     def stop_playback(self, sender):
         self.reset_menu_state()
@@ -193,22 +201,35 @@ class RadioBar(rumps.App):
         # Stopped -> Playing
         if sender == None:
             pass
+        # Starting to play - not been playing before
         elif self.active_station is None and sender is not None:
             self.play(sender)
+        # Paused, but we want to play another station
         elif self.menu[self.active_station] is not sender:
             self.play(sender)
+        # Paused and clicked the currently paused station
         else: 
             active_menu = self.menu[self.active_station]
             # Playing -> Paused
             if active_menu.state == 1:
-                active_menu.state = -1
-                self.icon = 'radio-icon-grey.png'
-                self.player.stop()
+                self.pause(active_menu)
             # Paused -> Playing
             elif active_menu.state == -1:
-                active_menu.state = 1
-                self.icon = 'radio-icon.png'
-                self.player.play()
+                self.play(active_menu)
+
+    def pause(self, sender):
+        sender.state = - 1
+        # This is hacky, but works
+        # https://github.com/jaredks/rumps/issues/30
+        color = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 1, 1, 0.4)
+        attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color}, conversionHelper=lambda x: x)
+        string = NSAttributedString.alloc().initWithString_attributes_(' ' + self.active_station, attributes)
+        self._nsapp.nsstatusitem.setAttributedTitle_(string)
+
+        self.icon = 'radio-icon-grey.png'
+        self.nowplaying = None
+        # We're really stopping (because it's live radio and we don't want to buffer)
+        self.player.stop()
 
     def get_nowplaying(self):
         if self.active_station is not None:
@@ -231,13 +252,18 @@ class RadioBar(rumps.App):
                 return None
 
     def update_nowplaying(self):
-        if self.active_station is not None:
+        state = self.player.get_state()
+        if self.active_station is not None and self.player.get_state() == vlc.State.Playing:
             old_info = self.nowplaying
             new = self.get_nowplaying()
             new_info = new.replace(self.active_station + " - ","")
+            # Remove trailing station info like "De Nieuws BV - BNN-VARA"
+            new_info = re.sub(r' - [A-Z-]*$', "", new_info)
             if new_info.isupper():
                 # Fix ALL UPPERCASE strings (and some annyoing regressions)
-                new_info = new_info.title().replace('3Fm','3FM').replace('Npo','NPO')
+                new_info = new_info.title()
+                # Get rid of uninteresting info like "Franz Ferdinand - This Fire (3Fm Intro)"
+                new_info = re.sub(r'\(3Fm .*\)', "", new_info)
            
             if (old_info is None or old_info != new_info):
                 self.nowplaying = new_info
@@ -269,7 +295,7 @@ class RadioBar(rumps.App):
     def sleep(self):
         print("Going to sleep!")
         if self.awake and self.active_station:
-            self.toggle_playback(self.menu[self.active_station])
+            self.pause(self.menu[self.active_station])
         self.awake = False
     
     def wake(self):
