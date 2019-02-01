@@ -6,11 +6,13 @@ macOS menubar app to play user-defined radio stations with help from [rumps](htt
 
 ## Features
 
+- ▶️  **Show now playing information (in menubar and/or notifications)**
 - ⚡ **Lightweight and fast!**
 - 🖥️ **Menubar only, no Dock icon**
 - 🎵 **Add any streaming URL that VLC can play**
 - 💤 **Stop playing when macOS goes to sleep**
 - 🕹️ **Remote control via scripts and launchers such as Alfred**
+
 
 ## Installation
 
@@ -30,6 +32,8 @@ Currently no packaged `.app` is distributed because I've not yet been able to in
 - Click "Stop" to stop streaming a channel
 - "Now Playing" information shows on top of the menu
 - Notifications are show when the "Now playing" information changes (unless it's the channel / show name)
+
+Check `radiobar.py` source code to set options to show notifications or show nowplaying in the menubar.
 
 Pause / resume stops streaming (but shows the channel as paused). It's not buffering radio (which didn't seem logical for live radio). You can also use the `remote.py` to automate switching channels, see below.
 
