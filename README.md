@@ -6,11 +6,11 @@ macOS menubar app to play user-defined radio stations with help from [rumps](htt
 
 ## Features
 
-- Lightweight and fast!
-- Menubar only, no Dock icon
-- Add any streaming URL that VLC can play
-- Stop playing when macOS goes to sleep
-- Remote control via scripts and launchers such as Alfred
+- **Lightweight and fast!**
+- **Menubar only, no Dock icon**
+- **Add any streaming URL that VLC can play**
+- **Stop playing when macOS goes to sleep**
+- **Remote control via scripts and launchers such as Alfred**
 
 ## Installation
 
