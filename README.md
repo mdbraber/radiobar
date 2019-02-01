@@ -23,6 +23,8 @@ Currently no packaged `.app` is distributed because I've not yet been able to in
 
 Pause / resume stops streaming (but shows the channel as paused). It's not buffering radio (which didn't seem logical for live radio). You can also use the `remote.py` to automate switching channels, see below.
 
+When macOS sleeps streaming will be stopped and you have to manually resume it (this is a feature). This only works if you're using an updated version of `rumps` (see [PR #109](https://github.com/jaredks/rumps/pull/109).
+
 ## Remote
 
 Use the include `remote.py` to send commands to a running RadioBar instance to change channels and switch on/off. You can also use the command as part of an Alfred workflow. `remote.py` understands the following commands:
