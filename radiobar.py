@@ -14,8 +14,7 @@ import re
 
 from AppKit import NSAttributedString
 from PyObjCTools.Conversion import propertyListFromPythonCollection
-from Cocoa import (NSFont, NSFontAttributeName,
-    NSColor, NSForegroundColorAttributeName)
+from Cocoa import (NSFont, NSFontAttributeName, NSColor, NSForegroundColorAttributeName)
 
 # preload libvlccore.dylib
 # https://github.com/oaubert/python-vlc/issues/37
@@ -28,9 +27,7 @@ if os.path.exists(p):
 
 import vlc
 
-#print(vlc.__file__)
-
-rumps.debug_mode(False)
+rumps.debug_mode(True)
 
 if 'VLC_PLUGIN_PATH' not in os.environ:
     # print('VLC_PLUGIN_PATH not set. Setting now...')
@@ -116,7 +113,8 @@ class RadioBar(rumps.App):
         # https://github.com/jaredks/rumps/issues/30
         if title is not None:
             color = NSColor.colorWithCalibratedRed_green_blue_alpha_(red, green, blue, alpha)
-            attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color}, conversionHelper=lambda x: x)
+            font = NSFont.menuBarFontOfSize_(0)
+            attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color, NSFontAttributeName: font}, conversionHelper=lambda x: x)
             string = NSAttributedString.alloc().initWithString_attributes_(' ' + title, attributes)
             self._nsapp.nsstatusitem.setAttributedTitle_(string)
 
