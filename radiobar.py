@@ -110,6 +110,16 @@ class RadioBar(rumps.App):
         self.threads.append(remote_thread)
         remote_thread.start()
 
+    def set_title(self, title, red = 29/255, green = 185/255, blue = 84/255 , alpha = 1):
+        self.title = title
+        # This is hacky, but works
+        # https://github.com/jaredks/rumps/issues/30
+        if title is not None:
+            color = NSColor.colorWithCalibratedRed_green_blue_alpha_(red, green, blue, alpha)
+            attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color}, conversionHelper=lambda x: x)
+            string = NSAttributedString.alloc().initWithString_attributes_(' ' + title, attributes)
+            self._nsapp.nsstatusitem.setAttributedTitle_(string)
+
     def build_menu(self):
         self.menu.clear()
 
@@ -162,7 +172,7 @@ class RadioBar(rumps.App):
         self.menu[self.active_station].state = 0
         self.menu[self.active_station].set_callback(self.toggle_playback)
         self.active_station = None
-        self.title = None
+        self.set_title(None)
         self.menu['Stop'].state = 0
         self.menu['Stop'].title = 'Stop'
         self.menu['Stop'].set_callback(None)
@@ -174,8 +184,8 @@ class RadioBar(rumps.App):
             self.reset_menu_state()
 
         self.active_station = sender.title
-        self.title = ' ' + sender.title
-        self.icon = 'radio-icon.png'
+        self.set_title(sender.title, 1, 1, 1, 0.4)
+        self.icon = 'radio-icon-green.png'
         sender.state = 1
         self.menu['Stop'].set_callback(self.stop_playback)
         self.menu['Stop'].title = 'Stop'
@@ -199,33 +209,26 @@ class RadioBar(rumps.App):
 
     def toggle_playback(self, sender):
         # Stopped -> Playing
-        if sender == None:
-            pass
-        # Starting to play - not been playing before
-        elif self.active_station is None and sender is not None:
-            self.play(sender)
-        # Paused, but we want to play another station
-        elif self.menu[self.active_station] is not sender:
-            self.play(sender)
-        # Paused and clicked the currently paused station
-        else: 
-            active_menu = self.menu[self.active_station]
-            # Playing -> Paused
-            if active_menu.state == 1:
-                self.pause(active_menu)
-            # Paused -> Playing
-            elif active_menu.state == -1:
-                self.play(active_menu)
+        if sender is not None:
+            # Starting to play - not been playing before
+            if self.active_station is None:
+                self.play(sender)
+            # Paused, but we want to play another station
+            elif self.menu[self.active_station] is not sender:
+                self.play(sender)
+            # Paused and clicked the currently paused station
+            else: 
+                active_menu = self.menu[self.active_station]
+                # Playing -> Paused
+                if active_menu.state == 1:
+                    self.pause(active_menu)
+                # Paused -> Playing
+                elif active_menu.state == -1:
+                    self.play(active_menu)
 
     def pause(self, sender):
         sender.state = - 1
-        # This is hacky, but works
-        # https://github.com/jaredks/rumps/issues/30
-        color = NSColor.colorWithCalibratedRed_green_blue_alpha_(1, 1, 1, 0.4)
-        attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color}, conversionHelper=lambda x: x)
-        string = NSAttributedString.alloc().initWithString_attributes_(' ' + self.active_station, attributes)
-        self._nsapp.nsstatusitem.setAttributedTitle_(string)
-
+        self.set_title(self.active_station, 1, 1, 1, 0.4)
         self.icon = 'radio-icon-grey.png'
         self.nowplaying = None
         # We're really stopping (because it's live radio and we don't want to buffer)
@@ -253,10 +256,13 @@ class RadioBar(rumps.App):
 
     def update_nowplaying(self):
         state = self.player.get_state()
-        if self.active_station is not None and self.player.get_state() == vlc.State.Playing:
+        # Try to update information asap, even if vlc.State.Opening
+        if self.active_station is not None and self.player.get_state() in {vlc.State.Playing, vlc.State.Opening}:
             old_info = self.nowplaying
             new = self.get_nowplaying()
             new_info = new.replace(self.active_station + " - ","")
+            # Remove non-info like "TOPSONG: " (NPO Radio 2)
+            new_info = new_info.replace("TOPSONG: ","")
             # Remove trailing station info like "De Nieuws BV - BNN-VARA"
             new_info = re.sub(r' - [A-Z-]*$', "", new_info)
             if new_info.isupper():
@@ -264,17 +270,21 @@ class RadioBar(rumps.App):
                 new_info = new_info.title()
                 # Get rid of uninteresting info like "Franz Ferdinand - This Fire (3Fm Intro)"
                 new_info = re.sub(r'\(3Fm .*\)', "", new_info)
-           
-            if (old_info is None or old_info != new_info):
-                self.nowplaying = new_info
-                self.menu['Now Playing'].title = new_info
+        
+            self.nowplaying = new_info
+            self.menu['Now Playing'].title = new_info
+  
+            if new_info == self.active_station:
+                self.set_title(new_info)
+            else:
                 if self.show_nowplaying_menubar:
-                    self.title = ' ' + self.active_station + ' - ' + new_info
+                    self.set_title(self.active_station + ' - ' + new_info)
                 # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
                 # and I don't want notifications all the time the show name comes back on as Now Playing new_info...
                 # So we only show notifications when the new info doesn't start with the station name.
                 if not new.startswith(self.active_station):
                     self.notify(new_info)
+
 
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
