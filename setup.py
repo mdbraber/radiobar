@@ -3,9 +3,9 @@ from setuptools import setup
 APP = ['radiobar.py']
 APP_NAME = "RadioBar"
 APP_VERSION = "0.1"
-DATA_FILES = ['channels.json','remote.py','radio-icon-grey.png','radio-icon.png']
+DATA_FILES = ['channels.json','remote.py','radio-icon.png','radio-icon-grey.png','radio-icon-green.png']
 OPTIONS = {
-    'argv_emulation': True,
+    'argv_emulation': False,
     'iconfile': 'radiobar.icns',
     'plist': {
         'CFBundleName': APP_NAME,
