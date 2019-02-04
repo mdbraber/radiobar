@@ -104,6 +104,7 @@ class RadioBar(rumps.App):
 
         self.threads = []
         remote_thread = RadioBarRemoteThread(self, '127.0.0.1', 65432)
+        remote_thread.daemon = True
         self.threads.append(remote_thread)
         remote_thread.start()
 
@@ -112,6 +113,9 @@ class RadioBar(rumps.App):
         # This is hacky, but works
         # https://github.com/jaredks/rumps/issues/30
         if title is not None:
+            if len(title) > 40:
+                title = title[:37] + '...'
+
             color = NSColor.colorWithCalibratedRed_green_blue_alpha_(red, green, blue, alpha)
             font = NSFont.menuBarFontOfSize_(0)
             attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color, NSFontAttributeName: font}, conversionHelper=lambda x: x)
@@ -274,7 +278,8 @@ class RadioBar(rumps.App):
   
             if new_info == self.active_station:
                 self.set_title(new_info)
-            else:
+            
+            if old_info is None or new_info != old_info:
                 if self.show_nowplaying_menubar:
                     self.set_title(self.active_station + ' - ' + new_info)
                 # This depends on how your stations work, but for me the station changes back to "Station Name - Show Name" after a song
@@ -282,7 +287,6 @@ class RadioBar(rumps.App):
                 # So we only show notifications when the new info doesn't start with the station name.
                 if not new.startswith(self.active_station):
                     self.notify(new_info)
-
 
     @rumps.timer(10)
     def track_metadata_changes(self, sender):
