@@ -16,7 +16,7 @@ macOS menubar app to play user-defined radio stations with help from [rumps](htt
 
 ## Installation
 
-Make sure you have `vlc` installed, e.g. using `brew cask install vlc`. Also, if you don't have Python installed, install it with `brew install python3`.
+Make sure you have `vlc` installed, e.g. using `brew cask install vlc`. Also, if you don't have Python installed, install it with `brew install python3`. Use the `master` repo of [rumps](https://github.com/jaredks/rumps) to use the `sleep()` and `wake()` events (see [PR #109](https://github.com/jaredks/rumps/pull/109))
 
 - Adapt `channels.json` to your needs
 - Check the source code to e.g. change notification settings (manual for now)
@@ -37,7 +37,7 @@ Check `radiobar.py` source code to set options to show notifications or show now
 
 Pause / resume stops streaming (but shows the channel as paused). It's not buffering radio (which didn't seem logical for live radio). You can also use the `remote.py` to automate switching channels, see below.
 
-When macOS sleeps streaming will be stopped and you have to manually resume it (this is a feature). This only works if you're using an updated version of `rumps` (see [PR #109](https://github.com/jaredks/rumps/pull/109)).
+When macOS sleeps streaming will be stopped and you have to manually resume it (this is a feature). This only works if you're using the latest version of `rumps` (see [PR #109](https://github.com/jaredks/rumps/pull/109)).
 
 ## Remote
 
@@ -68,7 +68,7 @@ To re-build the macOS app, run:
 
 - "Now playing" integration is experimental and might not work as expected
 
-- Sleep / wake only works when using a [patched version](https://github.com/mdbraber/rumps) of `rumps` until [PR #109](https://github.com/jaredks/rumps/pull/109) gets merged.
+-  <del>Sleep / wake only works when using a [patched version](https://github.com/mdbraber/rumps) of `rumps` until [PR #109](https://github.com/jaredks/rumps/pull/109) gets merged.</del>. This is now merged in `rumps` `master`.
 
 - `parse_with_options` might not not be needing the second argument (`timeout`) in your version. You could remove it (not sure yet if it makes any difference). I'm still trying to implement a hook that watches for metadata changes for now playing. Tips welcome :-)
 
