@@ -12,7 +12,7 @@ import json
 import time
 import re
 
-from AppKit import NSAttributedString
+from AppKit import NSAttributedString, NSScreen
 from PyObjCTools.Conversion import propertyListFromPythonCollection
 from Cocoa import (NSFont, NSFontAttributeName, NSColor, NSForegroundColorAttributeName)
 
@@ -27,7 +27,7 @@ if os.path.exists(p):
 
 import vlc
 
-rumps.debug_mode(True)
+rumps.debug_mode(False)
 
 if 'VLC_PLUGIN_PATH' not in os.environ:
     # print('VLC_PLUGIN_PATH not set. Setting now...')
@@ -54,20 +54,20 @@ class RadioBarRemoteThread(threading.Thread):
             msg = data.decode("utf-8")
             print("Remote received: " + msg)
             if msg == "":
-                radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+                radiobar.toggle(radiobar.menu[radiobar.active_station])
             elif msg.isnumeric() and 0 <= int(msg)-1 < len(radiobar.stations):
                 radiobar.play(radiobar.menu[radiobar.stations[int(msg)-1]['title']])
                 c.send(b'Listening to ' + radiobar.stations[int(msg)-1]['title'].encode('utf-8'))  
             elif msg == "off":
-                radiobar.stop_playback(radiobar.menu["Stop"])
+                radiobar.stop(radiobar.menu["Stop"])
                 c.send(b'Off')
             elif msg == "on" or msg == "resume":
                 if radiobar.active_station:
-                    radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+                    radiobar.toggle(radiobar.menu[radiobar.active_station])
                     c.send(b'On')
             elif msg == "pause":
                 if radiobar.active_station:
-                    radiobar.toggle_playback(radiobar.menu[radiobar.active_station])
+                    radiobar.toggle(radiobar.menu[radiobar.active_station])
                     c.send(b'Pause')
             elif msg == "nowplaying":
                 c.send(bytes(radiobar.nowplaying.encode('utf-8')))
@@ -75,7 +75,7 @@ class RadioBarRemoteThread(threading.Thread):
                 radiobar.notify(radiobar.nowplaying)
                 c.send(bytes(radiobar.nowplaying.encode('utf-8')))
             elif msg == "toggle":
-                radiobar.toggle_playback()
+                radiobar.toggle()
                 c.send(b'Toggle ' + radiobar.active_station.encode('utf-8'))
             else:
                 c.send(b'Unknown input')
@@ -92,6 +92,12 @@ class RadioBar(rumps.App):
         self.show_notifications = True
         self.show_notification_station_change = False
         self.show_nowplaying_menubar = True
+        self.default_icon = 'radio-icon.png' # 'radio-icon.png' or 'radio-icon-green.png'
+        self.default_icon_disabled = 'radio-icon-grey.png'
+        self.default_color_list = [255,255,255,1] # format: r,g,b,alpha // [29,185,84,1] = "Spotify green" // [0,0,0,1] = "White"
+        self.default_color_list_disabled = [255,255,255,0.4]
+        # Truncate if the screen is smaller than 1440px wide
+        self.truncate = NSScreen.screens()[0].frame().size.width <= 1440
 
         self.active_station = None
         self.nowplaying = None
@@ -108,15 +114,18 @@ class RadioBar(rumps.App):
         self.threads.append(remote_thread)
         remote_thread.start()
 
-    def set_title(self, title, red = 29/255, green = 185/255, blue = 84/255 , alpha = 1):
+    def set_title(self, title, color_list=None):
         self.title = title
-        # This is hacky, but works
-        # https://github.com/jaredks/rumps/issues/30
+        if color_list is None:
+                color_list = self.default_color_list
+
         if title is not None:
-            if len(title) > 40:
+            if self.truncate and len(title) > 40:
                 title = title[:37] + '...'
 
-            color = NSColor.colorWithCalibratedRed_green_blue_alpha_(red, green, blue, alpha)
+            # This is hacky, but works
+            # https://github.com/jaredks/rumps/issues/30
+            color = NSColor.colorWithCalibratedRed_green_blue_alpha_(color_list[0]/255, color_list[1]/255, color_list[2]/255, color_list[3])
             font = NSFont.menuBarFontOfSize_(0)
             attributes = propertyListFromPythonCollection({NSForegroundColorAttributeName: color, NSFontAttributeName: font}, conversionHelper=lambda x: x)
             string = NSAttributedString.alloc().initWithString_attributes_(' ' + title, attributes)
@@ -134,7 +143,7 @@ class RadioBar(rumps.App):
         new_menu.append(rumps.separator)
 
         for station in self.stations:
-            item = rumps.MenuItem(station['title'], callback=self.toggle_playback)
+            item = rumps.MenuItem(station['title'], callback=self.toggle)
             new_menu.append(item)
 
         new_menu.append(rumps.separator)
@@ -172,13 +181,14 @@ class RadioBar(rumps.App):
         if self.active_station is None:
             return
         self.menu[self.active_station].state = 0
-        self.menu[self.active_station].set_callback(self.toggle_playback)
+        self.menu[self.active_station].set_callback(self.toggle)
         self.active_station = None
         self.set_title(None)
         self.menu['Stop'].state = 0
         self.menu['Stop'].title = 'Stop'
         self.menu['Stop'].set_callback(None)
-        self.icon = 'radio-icon-grey.png'
+        self.icon = self.default_icon_disabled
+        self.menu['Now Playing'].title = 'Nothing playing...'
 
     def play(self, sender):
         # is there already a station playing or a paused station?
@@ -186,10 +196,10 @@ class RadioBar(rumps.App):
             self.reset_menu_state()
 
         self.active_station = sender.title
-        self.set_title(sender.title, 1, 1, 1, 0.4)
-        self.icon = 'radio-icon-green.png'
+        self.set_title(sender.title)
+        self.icon = self.default_icon
         sender.state = 1
-        self.menu['Stop'].set_callback(self.stop_playback)
+        self.menu['Stop'].set_callback(self.stop)
         self.menu['Stop'].title = 'Stop'
 
         print("Switching to station: " + self.active_station)
@@ -202,14 +212,7 @@ class RadioBar(rumps.App):
         if self.show_notification_station_change:
             self.notify(self.nowplaying)
 
-    def stop_playback(self, sender):
-        self.reset_menu_state()
-        self.player.stop()
-        self.menu['Now Playing'].title = 'Nothing playing...'
-        self.icon = 'radio-icon-grey.png'
-        self.notify("Stopped")
-
-    def toggle_playback(self, sender):
+    def toggle(self, sender):
         # Stopped -> Playing
         if sender is not None:
             # Starting to play - not been playing before
@@ -229,12 +232,18 @@ class RadioBar(rumps.App):
                     self.play(active_menu)
 
     def pause(self, sender):
-        sender.state = - 1
-        self.set_title(self.active_station, 1, 1, 1, 0.4)
-        self.icon = 'radio-icon-grey.png'
-        self.nowplaying = None
         # We're really stopping (because it's live radio and we don't want to buffer)
         self.player.stop()
+        sender.state = - 1
+        self.set_title(self.active_station, self.default_color_list_disabled)
+        self.icon = self.default_icon_disabled 
+        self.nowplaying = None
+        self.menu['Now Playing'].title = 'Paused'
+
+    def stop(self, sender):
+        self.player.stop()
+        self.reset_menu_state()
+        self.notify("Stopped")
 
     def get_nowplaying(self):
         if self.active_station is not None:
@@ -265,6 +274,7 @@ class RadioBar(rumps.App):
             new_info = new.replace(self.active_station + " - ","")
             # Remove non-info like "TOPSONG: " (NPO Radio 2)
             new_info = new_info.replace("TOPSONG: ","")
+            new_info = new_info.replace("HI: ","")
             # Remove trailing station info like "De Nieuws BV - BNN-VARA"
             new_info = re.sub(r' - [A-Z-]*$', "", new_info)
             if new_info.isupper():
