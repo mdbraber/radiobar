@@ -30,7 +30,7 @@ Currently no packaged `.app` is distributed because I've not yet been able to in
 - Click a channel to start streaming (a ✔ is shown in front)
 - Click the current channel to pause streaming (a `-` is shown in front)
 - Click "Stop" to stop streaming a channel
-- "Now Playing" information shows on top of the menu
+- "Now Playing" information shows on top of the menu and/or in menubar (truncated for long titles on smaller screens)
 - Notifications are show when the "Now playing" information changes (unless it's the channel / show name)
 
 Check `radiobar.py` source code to set options to show notifications or show nowplaying in the menubar.
@@ -63,6 +63,8 @@ To re-build the macOS app, run:
 
 1. `rm -rf ./dist/ ./build/`
 2. `python setup.py py2app`
+
+You can also use the supplied `Makefile` to use `make clean`, `make build` (default) and `make install` (to copy the new .app to `/Applications`)
 
 ## Bugs
 
